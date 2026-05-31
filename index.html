@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Y2K Split Bill</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for retro/Y2K vibe -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Varela+Round&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons for cute icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Confetti for fun interactions -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'y2k-purple': '#c4b5fd',
+                        'y2k-yellow': '#fde047',
+                        'y2k-blue': '#93c5fd',
+                        'y2k-pink': '#f9a8d4',
+                        'y2k-bg': '#fdf2f8',
+                        'y2k-dark': '#4c1d95',
+                    },
+                    fontFamily: {
+                        'pixel': ['"Press Start 2P"', 'cursive'],
+                        'round': ['"Varela Round"', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'neo': '4px 4px 0px 0px rgba(76, 29, 149, 1)',
+                        'neo-sm': '2px 2px 0px 0px rgba(76, 29, 149, 1)',
+                        'neo-hover': '2px 2px 0px 0px rgba(76, 29, 149, 1)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #fdf2f8; /* y2k-bg */
+            background-image: radial-gradient(#c4b5fd 1px, transparent 1px);
+            background-size: 20px 20px;
+            font-family: 'Varela Round', sans-serif;
+            color: #4c1d95; /* y2k-dark */
+            overflow-x: hidden;
+        }
+
+        /* Custom Scrollbar for Webkit */
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #fdf2f8; 
+            border-left: 2px solid #4c1d95;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #f9a8d4; 
+            border: 2px solid #4c1d95;
+            border-radius: 6px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #c4b5fd; 
+        }
+
+        .pixel-text {
+            font-family: 'Press Start 2P', cursive;
+            line-height: 1.5;
+        }
+
+        .btn-neo {
+            transition: all 0.1s ease-in-out;
+        }
+        .btn-neo:active {
+            transform: translate(2px, 2px);
+            box-shadow: 0px 0px 0px 0px rgba(76, 29, 149, 1) !important;
+        }
+
+        .input-neo {
+            border: 2px solid #4c1d95;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .input-neo:focus {
+            background-color: #fffbeb; /* Light yellow focus */
+        }
+
+        /* Fun floating animation for title */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+            100% { transform: translateY(0px); }
+        }
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        /* Modal overlay */
+        #modal-overlay {
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col relative pb-20">
+
+    <header class="sticky top-0 z-50 bg-y2k-blue border-b-4 border-y2k-dark shadow-neo px-4 py-3 flex justify-between items-center">
+        <div class="flex items-center gap-2 animate-float">
+            <i class="ph-fill ph-star text-y2k-yellow text-3xl drop-shadow-[2px_2px_0_rgba(76,29,149,1)]"></i>
+            <h1 class="pixel-text text-lg sm:text-xl text-white drop-shadow-[2px_2px_0_rgba(76,29,149,1)] tracking-widest uppercase">Split It!</h1>
+        </div>
+        <button id="nav-btn-history" class="btn-neo bg-y2k-pink border-2 border-y2k-dark rounded-full p-2 shadow-neo-sm text-y2k-dark hover:bg-white" onclick="toggleView('history')">
+            <i class="ph-bold ph-clock-counter-clockwise text-xl"></i>
+        </button>
+    </header>
+
+    <main id="app-container" class="flex-grow w-full max-w-md mx-auto p-4 flex flex-col gap-6 mt-4">
+
+        <!-- Home/Current Trip View -->
+        <div id="view-current-trip" class="flex flex-col gap-6 w-full">
+            
+            <!-- Trip Header Section -->
+            <section class="bg-white border-4 border-y2k-dark rounded-2xl p-4 shadow-neo relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-16 h-16 bg-y2k-yellow rounded-bl-full border-b-4 border-l-4 border-y2k-dark -mr-1 -mt-1 z-0 opacity-50"></div>
+                
+                <div class="relative z-10 flex flex-col gap-3">
+                    <label class="text-sm font-bold uppercase tracking-wider text-y2k-dark pixel-text text-xs">Trip Name <i class="ph ph-sparkle text-y2k-pink"></i></label>
+                    <input type="text" id="trip-name-input" placeholder="e.g. Pattaya 2026..." class="input-neo w-full bg-y2k-bg p-3 rounded-xl font-bold text-lg text-y2k-dark shadow-inner" value="My Awesome Trip">
+                    
+                    <div class="flex justify-between items-center mt-2">
+                        <span class="text-sm font-bold bg-y2k-purple px-2 py-1 rounded-md border-2 border-y2k-dark shadow-neo-sm">Status: <span id="trip-status">Active</span></span>
+                        <button id="btn-new-trip" class="btn-neo bg-y2k-yellow border-2 border-y2k-dark rounded-xl px-3 py-1.5 shadow-neo-sm font-bold text-sm flex items-center gap-1" onclick="startNewTrip()">
+                            <i class="ph-bold ph-plus-circle"></i> New Trip
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Friends (Gang) Section -->
+            <section class="bg-y2k-purple border-4 border-y2k-dark rounded-2xl p-4 shadow-neo">
+                <h2 class="pixel-text text-xs mb-4 text-white drop-shadow-[2px_2px_0_rgba(76,29,149,1)]">The Gang <i class="ph-fill ph-users"></i></h2>
+                
+                <div class="flex mb-4 gap-2">
+                    <input type="text" id="new-friend-input" placeholder="Friend's Name" class="input-neo flex-grow p-2 rounded-xl text-sm" onkeypress="handleEnter(event, addFriend)">
+                    <button class="btn-neo bg-y2k-pink border-2 border-y2k-dark rounded-xl px-4 py-2 shadow-neo-sm font-bold" onclick="addFriend()">Add</button>
+                </div>
+
+                <div id="friends-list" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-1">
+                    <!-- Friends badges will be injected here -->
+                    <p class="text-sm text-y2k-dark/70 italic w-full text-center" id="empty-friends-msg">Add friends to start splitting!</p>
+                </div>
+            </section>
+
+            <!-- Expenses Section -->
+            <section class="bg-y2k-blue border-4 border-y2k-dark rounded-2xl p-4 shadow-neo flex flex-col gap-4">
+                <div class="flex justify-between items-end">
+                    <h2 class="pixel-text text-xs text-white drop-shadow-[2px_2px_0_rgba(76,29,149,1)]">Expenses <i class="ph-fill ph-receipt"></i></h2>
+                    <span class="font-bold text-sm bg-white px-2 py-1 rounded-md border-2 border-y2k-dark">Total: <span id="total-trip-expense" class="text-y2k-pink font-extrabold text-lg">0</span> ฿</span>
+                </div>
+
+                <!-- Add Expense Form -->
+                <div class="bg-white p-3 rounded-xl border-2 border-y2k-dark flex flex-col gap-3">
+                    <input type="text" id="expense-name" placeholder="What did we pay for? (e.g. Dinner)" class="input-neo p-2 rounded-lg text-sm w-full">
+                    <div class="flex gap-2">
+                        <input type="number" id="expense-amount" placeholder="Amount (฿)" class="input-neo p-2 rounded-lg text-sm w-1/2" min="0" step="0.01">
+                        <select id="expense-payer" class="input-neo p-2 rounded-lg text-sm w-1/2 bg-white">
+                            <option value="" disabled selected>Who paid?</option>
+                            <!-- Options populated by JS -->
+                        </select>
+                    </div>
+                    
+                    <div class="mt-2">
+                        <p class="text-xs font-bold mb-2">Who shares this? <button class="text-y2k-pink underline" onclick="selectAllForExpense()">All</button> / <button class="text-y2k-blue underline" onclick="deselectAllForExpense()">None</button></p>
+                        <div id="expense-sharers-container" class="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
+                            <!-- Sharer checkboxes injected here -->
+                            <p class="text-xs text-gray-500 italic" id="empty-sharers-msg">Add friends first!</p>
+                        </div>
+                    </div>
+
+                    <button class="btn-neo bg-y2k-yellow border-2 border-y2k-dark rounded-xl py-2 font-bold w-full shadow-neo-sm mt-2 flex items-center justify-center gap-2" onclick="addExpense()">
+                        <i class="ph-bold ph-plus"></i> Add Expense
+                    </button>
+                </div>
+
+                <!-- Expense List -->
+                <div id="expenses-list" class="flex flex-col gap-2 max-h-60 overflow-y-auto">
+                    <!-- Expense items injected here -->
+                </div>
+            </section>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-3 mb-8">
+                <button class="btn-neo flex-1 bg-white border-4 border-y2k-dark rounded-2xl py-3 shadow-neo font-bold text-lg flex items-center justify-center gap-2 hover:bg-y2k-bg" onclick="saveTripLocally()">
+                    <i class="ph-bold ph-floppy-disk text-y2k-blue text-xl"></i> Save Trip
+                </button>
+                <button class="btn-neo flex-1 bg-y2k-pink border-4 border-y2k-dark rounded-2xl py-3 shadow-neo font-bold text-lg flex items-center justify-center gap-2 text-white drop-shadow-md" onclick="calculateSummary()">
+                    <i class="ph-bold ph-calculator text-xl"></i> Calculate!
+                </button>
+            </div>
+        </div>
+
+        <div id="view-history" class="hidden flex-col gap-6 w-full">
+            <div class="bg-white border-4 border-y2k-dark rounded-2xl p-4 shadow-neo">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="pixel-text text-xs text-y2k-dark">Saved Trips <i class="ph-fill ph-folder-open"></i></h2>
+                    <button class="btn-neo bg-y2k-yellow p-1 rounded-lg border-2 border-y2k-dark shadow-neo-sm" onclick="toggleView('current')">
+                        <i class="ph-bold ph-x"></i>
+                    </button>
+                </div>
+                
+                <div id="history-list" class="flex flex-col gap-3">
+                    <!-- History items injected here -->
+                    <p class="text-center text-sm text-gray-500 py-4 italic">No saved trips yet. Go make some memories!</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="result-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
+        <!-- Backdrop -->
+        <div id="modal-overlay" class="absolute inset-0 bg-y2k-dark/40" onclick="closeModal()"></div>
+        
+        <!-- Modal Content -->
+        <div class="bg-white border-4 border-y2k-dark rounded-3xl p-6 shadow-neo w-full max-w-sm relative z-10 flex flex-col max-h-[80vh]">
+            <button class="absolute -top-3 -right-3 btn-neo bg-y2k-pink border-2 border-y2k-dark rounded-full p-2 shadow-neo-sm text-white" onclick="closeModal()">
+                <i class="ph-bold ph-x"></i>
+            </button>
+            
+            <div class="text-center mb-4">
+                <h2 class="pixel-text text-sm text-y2k-purple drop-shadow-[1px_1px_0_rgba(76,29,149,1)] mb-1">Settlement</h2>
+                <p id="modal-trip-name" class="font-bold text-xl text-y2k-dark truncate"></p>
+            </div>
+
+            <div id="settlement-results" class="flex-grow overflow-y-auto flex flex-col gap-3 p-2 bg-y2k-bg rounded-xl border-2 border-y2k-blue/50 border-dashed">
+                <!-- Results injected here -->
+            </div>
+
+            <button class="btn-neo bg-y2k-yellow border-2 border-y2k-dark rounded-xl py-3 font-bold shadow-neo-sm mt-4 w-full flex items-center justify-center gap-2" onclick="copyResults()">
+                <i class="ph-bold ph-copy"></i> Copy to Clipboard
+            </button>
+        </div>
+    </div>
+
+    <div id="toast-container" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-[200] flex flex-col gap-2 pointer-events-none">
+        <!-- Toasts injected here -->
+    </div>
+
+    <script>
+        // Data Structure
+        let currentTrip = {
+            id: generateId(),
+            name: "My Awesome Trip",
+            friends: [],
+            expenses: [],
+            updatedAt: new Date().toISOString()
+        };
+
+        // Saved Trips array
+        let savedTrips = [];
+
+        // DOM Elements
+        const tripNameInput = document.getElementById('trip-name-input');
+        const newFriendInput = document.getElementById('new-friend-input');
+        const friendsList = document.getElementById('friends-list');
+        const emptyFriendsMsg = document.getElementById('empty-friends-msg');
+        
+        const expenseNameInput = document.getElementById('expense-name');
+        const expenseAmountInput = document.getElementById('expense-amount');
+        const expensePayerSelect = document.getElementById('expense-payer');
+        const expenseSharersContainer = document.getElementById('expense-sharers-container');
+        const emptySharersMsg = document.getElementById('empty-sharers-msg');
+        const expensesList = document.getElementById('expenses-list');
+        const totalTripExpenseEl = document.getElementById('total-trip-expense');
+        
+        const viewCurrent = document.getElementById('view-current-trip');
+        const viewHistory = document.getElementById('view-history');
+        const historyList = document.getElementById('history-list');
+
+        const resultModal = document.getElementById('result-modal');
+        const settlementResults = document.getElementById('settlement-results');
+        const modalTripName = document.getElementById('modal-trip-name');
+
+        function init() {
+            loadTripsFromStorage();
+            
+            // Check if there's a recently active trip in storage to load, otherwise start fresh
+            const lastActiveId = localStorage.getItem('retroSplit_lastActiveId');
+            if (lastActiveId) {
+                const found = savedTrips.find(t => t.id === lastActiveId);
+                if (found) {
+                    currentTrip = JSON.parse(JSON.stringify(found)); // Deep copy
+                }
+            }
+            
+            updateUI();
+            
+            // Event listener for trip name changes
+            tripNameInput.addEventListener('input', (e) => {
+                currentTrip.name = e.target.value || "Untitled Trip";
+            });
+        }
+
+        function generateId() {
+            return Math.random().toString(36).substr(2, 9);
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let bgColor = 'bg-white';
+            if(type === 'success') bgColor = 'bg-y2k-yellow';
+            if(type === 'error') bgColor = 'bg-y2k-pink';
+
+            toast.className = `${bgColor} border-2 border-y2k-dark rounded-xl px-4 py-2 shadow-neo-sm font-bold text-sm transform transition-all duration-300 translate-y-10 opacity-0 pointer-events-auto flex items-center gap-2`;
+            
+            let icon = 'ph-info';
+            if(type === 'success') icon = 'ph-check-circle';
+            if(type === 'error') icon = 'ph-warning-circle';
+
+            toast.innerHTML = `<i class="ph-bold ${icon}"></i> ${message}`;
+            
+            container.appendChild(toast);
+            
+            // Animate in
+            setTimeout(() => {
+                toast.classList.remove('translate-y-10', 'opacity-0');
+            }, 10);
+
+            // Animate out
+            setTimeout(() => {
+                toast.classList.add('translate-y-10', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function handleEnter(e, callback) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                callback();
+            }
+        }
+
+        function addFriend() {
+            const name = newFriendInput.value.trim();
+            if (!name) return;
+            
+            // Check for duplicates
+            if (currentTrip.friends.some(f => f.name.toLowerCase() === name.toLowerCase())) {
+                showToast("Friend already exists!", "error");
+                return;
+            }
+
+            const newFriend = { id: generateId(), name: name };
+            currentTrip.friends.push(newFriend);
+            
+            newFriendInput.value = '';
+            
+            // Check all friends for existing expenses by default? Let's leave them unchecked for existing, 
+            // but add them to the UI.
+            updateUI();
+            fireConfetti(true);
+        }
+
+        function removeFriend(id) {
+            // Check if friend is involved in expenses
+            const involved = currentTrip.expenses.some(exp => 
+                exp.payerId === id || exp.sharerIds.includes(id)
+            );
+            
+            if (involved) {
+                showToast("Cannot remove friend involved in expenses. Delete expenses first.", "error");
+                return;
+            }
+
+            currentTrip.friends = currentTrip.friends.filter(f => f.id !== id);
+            updateUI();
+        }
+
+        function addExpense() {
+            const name = expenseNameInput.value.trim() || "Unnamed Expense";
+            const amount = parseFloat(expenseAmountInput.value);
+            const payerId = expensePayerSelect.value;
+            
+            // Get selected sharers
+            const checkboxes = document.querySelectorAll('.sharer-checkbox:checked');
+            const sharerIds = Array.from(checkboxes).map(cb => cb.value);
+
+            if (isNaN(amount) || amount <= 0) {
+                showToast("Please enter a valid amount.", "error");
+                return;
+            }
+            if (!payerId) {
+                showToast("Please select who paid.", "error");
+                return;
+            }
+            if (sharerIds.length === 0) {
+                showToast("Select at least one person sharing the cost.", "error");
+                return;
+            }
+
+            const expense = {
+                id: generateId(),
+                name: name,
+                amount: amount,
+                payerId: payerId,
+                sharerIds: sharerIds,
+                timestamp: Date.now()
+            };
+
+            currentTrip.expenses.push(expense);
+            
+            // Reset form
+            expenseNameInput.value = '';
+            expenseAmountInput.value = '';
+            // keep payer same usually helps
+            selectAllForExpense(); // reset sharers to all
+            
+            updateUI();
+            showToast("Expense added!", "success");
+        }
+
+        function removeExpense(id) {
+            currentTrip.expenses = currentTrip.expenses.filter(e => e.id !== id);
+            updateUI();
+        }
+
+        function selectAllForExpense() {
+            document.querySelectorAll('.sharer-checkbox').forEach(cb => cb.checked = true);
+        }
+        function deselectAllForExpense() {
+            document.querySelectorAll('.sharer-checkbox').forEach(cb => cb.checked = false);
+        }
+
+        function updateUI() {
+            tripNameInput.value = currentTrip.name;
+            
+            renderFriends();
+            renderExpenseFormSelects();
+            renderExpensesList();
+            updateTotal();
+        }
+
+        function renderFriends() {
+            friendsList.innerHTML = '';
+            if (currentTrip.friends.length === 0) {
+                emptyFriendsMsg.style.display = 'block';
+                return;
+            }
+            emptyFriendsMsg.style.display = 'none';
+
+            currentTrip.friends.forEach(friend => {
+                const badge = document.createElement('div');
+                badge.className = 'bg-white border-2 border-y2k-dark rounded-full px-3 py-1 text-sm font-bold flex items-center gap-2 shadow-neo-sm';
+                badge.innerHTML = `
+                    <span class="truncate max-w-[80px]">${friend.name}</span>
+                    <button class="text-y2k-pink hover:text-red-500 rounded-full" onclick="removeFriend('${friend.id}')">
+                        <i class="ph-bold ph-x-circle"></i>
+                    </button>
+                `;
+                friendsList.appendChild(badge);
+            });
+        }
+
+        function renderExpenseFormSelects() {
+            // Save current selections if possible
+            const currentPayer = expensePayerSelect.value;
+            
+            expensePayerSelect.innerHTML = '<option value="" disabled selected>Who paid?</option>';
+            expenseSharersContainer.innerHTML = '';
+
+            if (currentTrip.friends.length === 0) {
+                emptySharersMsg.style.display = 'block';
+                return;
+            }
+            emptySharersMsg.style.display = 'none';
+
+            currentTrip.friends.forEach(friend => {
+                // Payer Option
+                const option = document.createElement('option');
+                option.value = friend.id;
+                option.textContent = friend.name;
+                expensePayerSelect.appendChild(option);
+
+                // Sharer Checkbox
+                const label = document.createElement('label');
+                label.className = 'flex items-center gap-1 bg-white border border-y2k-dark rounded-md px-2 py-1 cursor-pointer hover:bg-y2k-bg text-sm';
+                label.innerHTML = `
+                    <input type="checkbox" class="sharer-checkbox accent-y2k-purple" value="${friend.id}" checked>
+                    <span class="truncate max-w-[60px]">${friend.name}</span>
+                `;
+                expenseSharersContainer.appendChild(label);
+            });
+
+            if (currentPayer && currentTrip.friends.some(f => f.id === currentPayer)) {
+                expensePayerSelect.value = currentPayer;
+            }
+        }
+
+        function renderExpensesList() {
+            expensesList.innerHTML = '';
+            if (currentTrip.expenses.length === 0) {
+                expensesList.innerHTML = '<p class="text-sm text-center text-white/80 italic py-2">No expenses yet.</p>';
+                return;
+            }
+
+            // Sort newest first
+            const sorted = [...currentTrip.expenses].sort((a,b) => b.timestamp - a.timestamp);
+
+            sorted.forEach(exp => {
+                const payer = currentTrip.friends.find(f => f.id === exp.payerId)?.name || 'Unknown';
+                
+                const item = document.createElement('div');
+                item.className = 'bg-white border-2 border-y2k-dark rounded-xl p-3 flex justify-between items-center shadow-neo-sm relative group overflow-hidden';
+                
+                // Color accent based on hash of name just for fun
+                const colors = ['bg-y2k-pink', 'bg-y2k-yellow', 'bg-y2k-purple', 'bg-y2k-blue'];
+                const accentColor = colors[exp.name.length % colors.length];
+                
+                item.innerHTML = `
+                    <div class="absolute left-0 top-0 bottom-0 w-2 ${accentColor} border-r-2 border-y2k-dark"></div>
+                    <div class="pl-4 flex flex-col w-[70%]">
+                        <span class="font-bold text-y2k-dark truncate">${exp.name}</span>
+                        <span class="text-xs text-gray-600 truncate">${payer} paid for ${exp.sharerIds.length} ppl</span>
+                    </div>
+                    <div class="flex flex-col items-end w-[30%]">
+                        <span class="font-bold text-lg">${exp.amount.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</span>
+                        <button class="text-xs text-red-500 underline opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-1 right-2 bg-white px-1" onclick="removeExpense('${exp.id}')">Delete</button>
+                    </div>
+                `;
+                expensesList.appendChild(item);
+            });
+        }
+
+        function updateTotal() {
+            const total = currentTrip.expenses.reduce((sum, exp) => sum + exp.amount, 0);
+            totalTripExpenseEl.textContent = total.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+        }
+
+        function loadTripsFromStorage() {
+            try {
+                const stored = localStorage.getItem('retroSplit_trips');
+                if (stored) {
+                    savedTrips = JSON.parse(stored);
+                }
+            } catch (e) {
+                console.error("Failed to load trips", e);
+                savedTrips = [];
+            }
+        }
+
+        function saveTripsToStorage() {
+            localStorage.setItem('retroSplit_trips', JSON.stringify(savedTrips));
+        }
+
+        function saveTripLocally() {
+            if (!currentTrip.name.trim()) {
+                currentTrip.name = "Untitled Trip";
+            }
+            
+            currentTrip.updatedAt = new Date().toISOString();
+            
+            const index = savedTrips.findIndex(t => t.id === currentTrip.id);
+            if (index >= 0) {
+                // Update existing
+                savedTrips[index] = JSON.parse(JSON.stringify(currentTrip));
+            } else {
+                // Add new
+                savedTrips.push(JSON.parse(JSON.stringify(currentTrip)));
+            }
+            
+            saveTripsToStorage();
+            localStorage.setItem('retroSplit_lastActiveId', currentTrip.id);
+            showToast("Trip saved!", "success");
+            
+            // Re-render history list if we are in that view, but normally we are in current view.
+            renderHistoryList();
+        }
+
+        function startNewTrip() {
+            // Ask to save current if there are changes? To keep it simple, just save it automatically before creating new
+            if(currentTrip.friends.length > 0 || currentTrip.expenses.length > 0) {
+                saveTripLocally();
+            }
+
+            currentTrip = {
+                id: generateId(),
+                name: "New Trip",
+                friends: [],
+                expenses: [],
+                updatedAt: new Date().toISOString()
+            };
+            
+            localStorage.setItem('retroSplit_lastActiveId', currentTrip.id);
+            updateUI();
+            showToast("Started a new trip!", "success");
+        }
+
+        function loadTrip(id) {
+            const trip = savedTrips.find(t => t.id === id);
+            if (trip) {
+                // Save current before switching
+                if(currentTrip.friends.length > 0 || currentTrip.expenses.length > 0) {
+                     saveTripLocally();
+                }
+
+                currentTrip = JSON.parse(JSON.stringify(trip));
+                localStorage.setItem('retroSplit_lastActiveId', currentTrip.id);
+                updateUI();
+                toggleView('current');
+                showToast("Trip loaded!", "info");
+            }
+        }
+
+        function deleteSavedTrip(id, event) {
+            event.stopPropagation();
+            if(confirm("Are you sure you want to delete this trip permanently?")) {
+                savedTrips = savedTrips.filter(t => t.id !== id);
+                saveTripsToStorage();
+                
+                if (currentTrip.id === id) {
+                    // We deleted the active trip, create a new blank one
+                    startNewTrip();
+                } else {
+                    renderHistoryList();
+                }
+                showToast("Trip deleted.", "info");
+            }
+        }
+
+        function toggleView(view) {
+            if (view === 'history') {
+                viewCurrent.classList.add('hidden');
+                viewHistory.classList.remove('hidden');
+                viewHistory.classList.add('flex');
+                renderHistoryList();
+            } else {
+                viewHistory.classList.add('hidden');
+                viewHistory.classList.remove('flex');
+                viewCurrent.classList.remove('hidden');
+                viewCurrent.classList.add('flex');
+            }
+        }
+
+        function renderHistoryList() {
+            historyList.innerHTML = '';
+            if (savedTrips.length === 0) {
+                historyList.innerHTML = '<p class="text-center text-sm text-gray-500 py-4 italic">No saved trips yet. Go make some memories!</p>';
+                return;
+            }
+
+            // Sort by updated latest
+            const sorted = [...savedTrips].sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+
+            sorted.forEach(trip => {
+                const total = trip.expenses.reduce((sum, e) => sum + e.amount, 0);
+                const date = new Date(trip.updatedAt).toLocaleDateString();
+                
+                const card = document.createElement('div');
+                card.className = 'bg-y2k-bg border-2 border-y2k-dark rounded-xl p-3 flex justify-between items-center cursor-pointer hover:bg-y2k-purple/20 transition-colors shadow-neo-sm';
+                card.onclick = () => loadTrip(trip.id);
+                
+                let activeBadge = trip.id === currentTrip.id ? '<span class="text-[10px] bg-y2k-yellow px-1 border border-y2k-dark rounded text-y2k-dark font-bold ml-2">ACTIVE</span>' : '';
+
+                card.innerHTML = `
+                    <div class="flex flex-col overflow-hidden w-2/3">
+                        <span class="font-bold text-y2k-dark truncate">${trip.name} ${activeBadge}</span>
+                        <span class="text-xs text-gray-500">${date} • ${trip.friends.length} friends</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="font-bold text-sm">${total.toLocaleString(undefined, {maximumFractionDigits:0})} ฿</span>
+                        <button class="text-y2k-pink hover:text-red-500 p-1" onclick="deleteSavedTrip('${trip.id}', event)">
+                            <i class="ph-bold ph-trash"></i>
+                        </button>
+                    </div>
+                `;
+                historyList.appendChild(card);
+            });
+        }
+
+        let finalSettlementText = "";
+
+        function calculateSummary() {
+            if (currentTrip.friends.length === 0 || currentTrip.expenses.length === 0) {
+                showToast("Need friends and expenses to calculate!", "error");
+                return;
+            }
+
+            // 1. Calculate Balances
+            // Initialize balances for all friends
+            let balances = {};
+            currentTrip.friends.forEach(f => {
+                balances[f.id] = { 
+                    name: f.name, 
+                    totalPaid: 0, 
+                    totalConsumed: 0, 
+                    net: 0,
+                    consumedDetails: [], // เก็บรายการที่ต้องจ่าย
+                    paidDetails: []      // เก็บรายการที่ออกให้ก่อน
+                };
+            });
+
+            // Process each expense
+            currentTrip.expenses.forEach(exp => {
+                // Payer gets credit (+)
+                if (balances[exp.payerId]) {
+                    balances[exp.payerId].totalPaid += exp.amount;
+                    balances[exp.payerId].net += exp.amount;
+                    balances[exp.payerId].paidDetails.push({name: exp.name, amount: exp.amount});
+                }
+                
+                // Sharers get debit (-)
+                if (exp.sharerIds.length > 0) {
+                    const splitAmount = exp.amount / exp.sharerIds.length;
+                    exp.sharerIds.forEach(sharerId => {
+                        if (balances[sharerId]) {
+                            balances[sharerId].totalConsumed += splitAmount;
+                            balances[sharerId].net -= splitAmount;
+                            balances[sharerId].consumedDetails.push({name: exp.name, amount: splitAmount});
+                        }
+                    });
+                }
+            });
+
+            // 2. Determine who owes whom (Greedy Algorithm for minimal transactions)
+            let debtors = []; // Owe money (net < 0)
+            let creditors = []; // Owed money (net > 0)
+
+            for (const id in balances) {
+                const amt = balances[id].net;
+                // Use a small epsilon to handle floating point inaccuracies
+                if (amt < -0.01) {
+                    debtors.push({ id, name: balances[id].name, amount: Math.abs(amt) });
+                } else if (amt > 0.01) {
+                    creditors.push({ id, name: balances[id].name, amount: amt });
+                }
+            }
+
+            // Sort to optimize matching largest debts to largest credits
+            debtors.sort((a, b) => b.amount - a.amount);
+            creditors.sort((a, b) => b.amount - a.amount);
+
+            let settlements = [];
+            let i = 0; // debtors index
+            let j = 0; // creditors index
+
+            while (i < debtors.length && j < creditors.length) {
+                let debtor = debtors[i];
+                let creditor = creditors[j];
+
+                let settleAmount = Math.min(debtor.amount, creditor.amount);
+                
+                // Only record if amount is meaningful (> 1 satang)
+                if (settleAmount > 0.01) {
+                    settlements.push({
+                        from: debtor.name,
+                        to: creditor.name,
+                        amount: settleAmount
+                    });
+                }
+
+                debtor.amount -= settleAmount;
+                creditor.amount -= settleAmount;
+
+                // Move to next if fulfilled
+                if (debtor.amount < 0.01) i++;
+                if (creditor.amount < 0.01) j++;
+            }
+
+            renderSettlementModal(settlements, balances);
+            
+            // Save state when calculating
+            saveTripLocally();
+        }
+
+        function renderSettlementModal(settlements, balances) {
+            modalTripName.textContent = currentTrip.name;
+            settlementResults.innerHTML = '';
+            finalSettlementText = `🧾 Split Bill: ${currentTrip.name}\n`;
+            
+            const totalStr = currentTrip.expenses.reduce((sum, e) => sum + e.amount, 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+            finalSettlementText += `Total Spent: ${totalStr} ฿\n\n`;
+
+            const breakdownContainer = document.createElement('div');
+            breakdownContainer.className = 'flex flex-col gap-3 pb-2';
+            
+            finalSettlementText += `📊 สรุปยอดและการโอนเงิน:\n`;
+
+            for (const id in balances) {
+                const b = balances[id];
+                const paidTotal = b.totalPaid.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+                const consumedTotal = b.totalConsumed.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+                
+                // Format Equations
+                const formatMath = (details) => {
+                    if (details.length === 0) return '0';
+                    return details.map(d => `${d.name}(${d.amount.toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:2})})`).join(' + ');
+                };
+
+                const consumedMath = formatMath(b.consumedDetails);
+                const paidMath = formatMath(b.paidDetails);
+
+                // Find transfers specific to this person
+                let oweTransfers = settlements.filter(s => s.from === b.name);
+                let receiveTransfers = settlements.filter(s => s.to === b.name);
+
+                let transferHtml = '';
+                let transferText = '';
+                
+                if (oweTransfers.length > 0) {
+                    const oweStr = oweTransfers.map(t => `<span class="font-bold text-red-600">${t.to}</span> <span class="bg-y2k-bg px-1 rounded border border-y2k-dark shadow-inner text-y2k-dark font-bold">${t.amount.toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:2})} ฿</span>`).join(', ');
+                    transferHtml = `<div class="mt-2 pt-2 border-t-2 border-dashed border-y2k-blue/50 text-sm">💸 <b>ต้องโอนให้:</b> ${oweStr}</div>`;
+                    transferText = `💸 ต้องโอนให้: ${oweTransfers.map(t => `${t.to} (${t.amount.toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:2})} ฿)`).join(', ')}`;
+                } else if (receiveTransfers.length > 0) {
+                    const recStr = receiveTransfers.map(t => `<span class="font-bold text-green-600">${t.from}</span> <span class="bg-y2k-bg px-1 rounded border border-y2k-dark shadow-inner text-y2k-dark font-bold">${t.amount.toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:2})} ฿</span>`).join(', ');
+                    transferHtml = `<div class="mt-2 pt-2 border-t-2 border-dashed border-y2k-blue/50 text-sm">💰 <b>รอรับเงินจาก:</b> ${recStr}</div>`;
+                    transferText = `💰 รอรับเงินจาก: ${receiveTransfers.map(t => `${t.from} (${t.amount.toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:2})} ฿)`).join(', ')}`;
+                } else {
+                    transferHtml = `<div class="mt-2 pt-2 border-t-2 border-dashed border-y2k-blue/50 text-sm font-bold text-gray-500">✨ เจ๊ากันพอดี ไม่ต้องโอน</div>`;
+                    transferText = `✨ เจ๊ากันพอดี ไม่ต้องโอน`;
+                }
+
+                const bItem = document.createElement('div');
+                bItem.className = 'bg-white border-2 border-y2k-dark rounded-xl p-3 shadow-neo-sm text-sm flex flex-col gap-1.5';
+                bItem.innerHTML = `
+                    <div class="font-bold text-y2k-dark text-base mb-1 flex items-center gap-1"><i class="ph-fill ph-user-circle text-y2k-purple text-xl"></i> ${b.name}</div>
+                    <div class="text-[11px] leading-relaxed text-gray-700 break-words"><span class="font-bold text-y2k-pink px-1 bg-y2k-pink/20 rounded">ส่วนที่กิน/ใช้:</span><br> ${consumedMath} = <b class="text-sm text-y2k-dark">${consumedTotal} ฿</b></div>
+                    ${b.totalPaid > 0 ? `<div class="text-[11px] leading-relaxed text-gray-700 break-words"><span class="font-bold text-y2k-blue px-1 bg-y2k-blue/20 rounded">ออกไปก่อน:</span><br> ${paidMath} = <b class="text-sm text-y2k-dark">${paidTotal} ฿</b></div>` : ''}
+                    ${transferHtml}
+                `;
+                breakdownContainer.appendChild(bItem);
+
+                finalSettlementText += `\n👤 ${b.name}\n`;
+                finalSettlementText += `  - กิน/ใช้: ${consumedMath} = ${consumedTotal} ฿\n`;
+                if (b.totalPaid > 0) {
+                    finalSettlementText += `  - ออกไปก่อน: ${paidMath} = ${paidTotal} ฿\n`;
+                }
+                finalSettlementText += `  ${transferText}\n`;
+            }
+            settlementResults.appendChild(breakdownContainer);
+
+            finalSettlementText += `\n✨ คิดเงินด้วย Retro Split It!`;
+
+            resultModal.classList.remove('hidden');
+            fireConfetti(false);
+        }
+
+        function closeModal() {
+            resultModal.classList.add('hidden');
+        }
+
+        async function copyResults() {
+            try {
+                // Try modern clipboard API first
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(finalSettlementText);
+                } else {
+                    // Fallback for iframe/older browsers
+                    const textArea = document.createElement("textarea");
+                    textArea.value = finalSettlementText;
+                    // Prevent scrolling to bottom
+                    textArea.style.position = "fixed";
+                    textArea.style.left = "-999999px";
+                    textArea.style.top = "-999999px";
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    document.execCommand('copy');
+                    textArea.remove();
+                }
+                showToast("Copied to clipboard!", "success");
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                showToast("Failed to copy. Try selecting manually.", "error");
+            }
+        }
+
+        function fireConfetti(isSmall = false) {
+            if(typeof confetti !== 'function') return;
+
+            const duration = isSmall ? 1000 : 3000;
+            const end = Date.now() + duration;
+
+            const colors = ['#c4b5fd', '#fde047', '#93c5fd', '#f9a8d4']; // Y2K colors
+
+            (function frame() {
+                confetti({
+                    particleCount: isSmall ? 2 : 5,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0 },
+                    colors: colors,
+                    zIndex: 200
+                });
+                confetti({
+                    particleCount: isSmall ? 2 : 5,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1 },
+                    colors: colors,
+                    zIndex: 200
+                });
+
+                if (Date.now() < end) {
+                    requestAnimationFrame(frame);
+                }
+            }());
+        }
+
+        // Initialize App on load
+        window.addEventListener('DOMContentLoaded', init);
+
+    </script>
+</body>
+</html>
