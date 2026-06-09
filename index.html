@@ -143,9 +143,12 @@
             <section class="bg-y2k-purple border-4 border-y2k-dark rounded-2xl p-4 shadow-neo">
                 <h2 class="pixel-text text-xs mb-4 text-white drop-shadow-[2px_2px_0_rgba(76,29,149,1)]">The Gang <i class="ph-fill ph-users"></i></h2>
                 
-                <div class="flex mb-4 gap-2">
-                    <input type="text" id="new-friend-input" placeholder="Friend's Name" class="input-neo flex-grow p-2 rounded-xl text-sm" onkeypress="handleEnter(event, addFriend)">
-                    <button class="btn-neo bg-y2k-pink border-2 border-y2k-dark rounded-xl px-4 py-2 shadow-neo-sm font-bold" onclick="addFriend()">Add</button>
+                <div class="flex flex-col gap-2 mb-4">
+                    <div class="flex gap-2">
+                        <input type="text" id="new-friend-input" placeholder="Friend's Name" class="input-neo flex-grow p-2 rounded-xl text-sm" onkeypress="handleEnter(event, addFriend)">
+                        <button class="btn-neo bg-y2k-pink border-2 border-y2k-dark rounded-xl px-4 py-2 shadow-neo-sm font-bold whitespace-nowrap" onclick="addFriend()">Add</button>
+                    </div>
+                    <input type="text" id="new-friend-pp-input" placeholder="PromptPay (Optional: Phone / ID)" class="input-neo w-full p-2 rounded-xl text-xs bg-white/50" onkeypress="handleEnter(event, addFriend)">
                 </div>
 
                 <div id="friends-list" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-1">
@@ -264,6 +267,7 @@
         // DOM Elements
         const tripNameInput = document.getElementById('trip-name-input');
         const newFriendInput = document.getElementById('new-friend-input');
+        const newFriendPpInput = document.getElementById('new-friend-pp-input');
         const friendsList = document.getElementById('friends-list');
         const emptyFriendsMsg = document.getElementById('empty-friends-msg');
         
@@ -346,6 +350,8 @@
 
         function addFriend() {
             const name = newFriendInput.value.trim();
+            const promptpay = newFriendPpInput.value.replace(/[^0-9]/g, ''); // เก็บเฉพาะตัวเลข
+
             if (!name) return;
             
             // Check for duplicates
@@ -354,10 +360,11 @@
                 return;
             }
 
-            const newFriend = { id: generateId(), name: name };
+            const newFriend = { id: generateId(), name: name, promptpay: promptpay };
             currentTrip.friends.push(newFriend);
             
             newFriendInput.value = '';
+            newFriendPpInput.value = '';
             
             // Check all friends for existing expenses by default? Let's leave them unchecked for existing, 
             // but add them to the UI.
@@ -455,8 +462,11 @@
             currentTrip.friends.forEach(friend => {
                 const badge = document.createElement('div');
                 badge.className = 'bg-white border-2 border-y2k-dark rounded-full px-3 py-1 text-sm font-bold flex items-center gap-2 shadow-neo-sm';
+                
+                const ppIcon = friend.promptpay ? `<i class="ph-fill ph-qr-code text-y2k-blue ml-1" title="PromptPay: ${friend.promptpay}"></i>` : '';
+
                 badge.innerHTML = `
-                    <span class="truncate max-w-[80px]">${friend.name}</span>
+                    <span class="truncate max-w-[80px]">${friend.name}</span>${ppIcon}
                     <button class="text-y2k-pink hover:text-red-500 rounded-full" onclick="removeFriend('${friend.id}')">
                         <i class="ph-bold ph-x-circle"></i>
                     </button>
@@ -694,7 +704,8 @@
             let balances = {};
             currentTrip.friends.forEach(f => {
                 balances[f.id] = { 
-                    name: f.name, 
+                    name: f.name,
+                    promptpay: f.promptpay, 
                     totalPaid: 0, 
                     totalConsumed: 0, 
                     net: 0,
@@ -735,7 +746,7 @@
                 if (amt < -0.01) {
                     debtors.push({ id, name: balances[id].name, amount: Math.abs(amt) });
                 } else if (amt > 0.01) {
-                    creditors.push({ id, name: balances[id].name, amount: amt });
+                    creditors.push({ id, name: balances[id].name, amount: amt, promptpay: balances[id].promptpay });
                 }
             }
 
@@ -758,6 +769,7 @@
                     settlements.push({
                         from: debtor.name,
                         to: creditor.name,
+                        toPromptpay: creditor.promptpay,
                         amount: settleAmount
                     });
                 }
@@ -811,8 +823,26 @@
                 let transferText = '';
                 
                 if (oweTransfers.length > 0) {
-                    const oweStr = oweTransfers.map(t => `<span class="font-bold text-red-600">${t.to}</span> <span class="bg-y2k-bg px-1 rounded border border-y2k-dark shadow-inner text-y2k-dark font-bold">${t.amount.toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:2})} ฿</span>`).join(', ');
-                    transferHtml = `<div class="mt-2 pt-2 border-t-2 border-dashed border-y2k-blue/50 text-sm">💸 <b>ต้องโอนให้:</b> ${oweStr}</div>`;
+                    const oweItems = oweTransfers.map(t => {
+                        let qrHtml = '';
+                        if (t.toPromptpay) {
+                            // ใช้ API ช่วยสร้าง PromptPay QR พร้อมล็อคราคา
+                            const ppUrl = `https://promptpay.io/${t.toPromptpay}/${t.amount}.png`;
+                            qrHtml = `
+                            <div class="mt-2 mb-1 flex flex-col items-center bg-white p-2 rounded-xl border-2 border-y2k-dark w-fit shadow-neo-sm">
+                                <img src="${ppUrl}" class="w-24 h-24" alt="PromptPay QR" onerror="this.style.display='none'">
+                                <span class="text-[10px] text-gray-500 mt-1 font-bold">PromptPay: ${t.toPromptpay}</span>
+                            </div>`;
+                        }
+                        return `
+                            <div class="flex flex-col mt-1">
+                                <div><span class="font-bold text-red-600">${t.to}</span> <span class="bg-y2k-bg px-1 rounded border border-y2k-dark shadow-inner text-y2k-dark font-bold">${t.amount.toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:2})} ฿</span></div>
+                                ${qrHtml}
+                            </div>
+                        `;
+                    }).join('');
+
+                    transferHtml = `<div class="mt-2 pt-2 border-t-2 border-dashed border-y2k-blue/50 text-sm">💸 <b>ต้องโอนให้:</b>${oweItems}</div>`;
                     transferText = `💸 ต้องโอนให้: ${oweTransfers.map(t => `${t.to} (${t.amount.toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:2})} ฿)`).join(', ')}`;
                 } else if (receiveTransfers.length > 0) {
                     const recStr = receiveTransfers.map(t => `<span class="font-bold text-green-600">${t.from}</span> <span class="bg-y2k-bg px-1 rounded border border-y2k-dark shadow-inner text-y2k-dark font-bold">${t.amount.toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:2})} ฿</span>`).join(', ');
