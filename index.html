@@ -829,9 +829,14 @@
                             // ใช้ API ช่วยสร้าง PromptPay QR พร้อมล็อคราคา
                             const ppUrl = `https://promptpay.io/${t.toPromptpay}/${t.amount}.png`;
                             qrHtml = `
-                            <div class="mt-2 mb-1 flex flex-col items-center bg-white p-2 rounded-xl border-2 border-y2k-dark w-fit shadow-neo-sm">
-                                <img src="${ppUrl}" class="w-24 h-24" alt="PromptPay QR" onerror="this.style.display='none'">
-                                <span class="text-[10px] text-gray-500 mt-1 font-bold">PromptPay: ${t.toPromptpay}</span>
+                            <div class="mt-2 mb-1">
+                                <button onclick="this.nextElementSibling.classList.toggle('hidden')" class="btn-neo text-xs bg-y2k-yellow border-2 border-y2k-dark rounded-lg px-3 py-1.5 shadow-neo-sm flex items-center gap-1 font-bold text-y2k-dark hover:bg-white transition-colors">
+                                    <i class="ph-bold ph-qr-code text-base"></i> กดเพื่อแสดง QR Code
+                                </button>
+                                <div class="hidden mt-2 flex flex-col items-center bg-white p-2 rounded-xl border-2 border-y2k-dark w-fit shadow-neo-sm animate-fade-in">
+                                    <img src="${ppUrl}" class="w-36 h-36" alt="PromptPay QR" onerror="this.style.display='none'">
+                                    <span class="text-[10px] text-gray-500 mt-1 font-bold">PromptPay: ${t.toPromptpay}</span>
+                                </div>
                             </div>`;
                         }
                         return `
